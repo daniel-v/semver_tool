@@ -1,14 +1,19 @@
 name: semver_tool
 description: >
   Command line utility to help manage semantic versions.
+homepage: https://github.com/daniel-v/semver_tool
+repository: https://github.com/daniel-v/semver_tool
+authors:
+  - Daniel Varga-Hali <O@o>
+version: 0.1.0
 
 environment:
   sdk: '>=2.6.0 <3.0.0'
 
 dependencies:
-  version:
-  args:
-  meta:
+  version: ^1.0.3
+  args: ^1.5.2
+  meta: ^1.1.8
 
 dev_dependencies:
   pedantic: ^1.8.0
