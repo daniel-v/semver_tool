@@ -2,9 +2,17 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:meta/meta.dart';
 import 'package:version/version.dart';
 
 import '../extensions.dart';
+
+Stream<List<int>> _fallbackReadStream = stdin;
+
+@visibleForTesting
+set fallbackReadStream(Stream<List<int>> val) {
+  _fallbackReadStream = val;
+}
 
 class IncrementCommand extends Command<String> {
   @override
@@ -29,8 +37,8 @@ class IncrementCommand extends Command<String> {
       // try to read stdin
       final stdinCompleter = Completer<String>();
       StreamSubscription<String> stdinSub;
-      stdinSub = stdin.transform(systemEncoding.decoder).listen(
-            (data) {
+      stdinSub = _fallbackReadStream.transform(systemEncoding.decoder).listen(
+        (data) {
           if (!stdinCompleter.isCompleted) {
             stdinCompleter.complete(data.trim());
           }
@@ -55,6 +63,11 @@ class IncrementCommand extends Command<String> {
         await stdinSub.cancel();
       }
     }
+    String versionPrefix = '';
+    versionOpt = versionOpt.replaceFirstMapped(_vPrefix, (match) {
+      versionPrefix = match.group(0);
+      return '';
+    });
     final version = Version.parse(versionOpt);
     Version newVer;
     if (argResults['major']) {
@@ -71,20 +84,23 @@ class IncrementCommand extends Command<String> {
     if (!isNullOrBlank(optPreRelease)) {
       newVer = newVer.copyWith(preRelease: <String>[optPreRelease.trim()]);
     }
-    return newVer.copyWith(build: argResults['build-no']).toString();
+    newVer = newVer.copyWith(build: argResults['build-no']);
+    return '$versionPrefix$newVer';
   }
 
   IncrementCommand() {
     argParser
-      ..addOption('version', abbr: 'v', help: 'SemVer in format of 0.0.0 or v0.0.0')..addOption(
-        'pre-release', abbr: 'r', help: 'Pre-release info to append to version')..addOption(
-        'build-no', abbr: 'n', help: 'Build number to appen to version')
-      ..addFlag(
-          'clean', abbr: 'c', negatable: true, defaultsTo: true, help: 'Removes pre-release and build info')..addFlag(
-        'major', abbr: 'm', negatable: false)..addFlag('minor', abbr: 'i', negatable: false)..addFlag(
-        'patch', abbr: 'p', negatable: false) //
+          ..addOption('version', abbr: 'v', help: 'SemVer in format of 0.0.0 or v0.0.0')
+          ..addOption('pre-release', abbr: 'r', help: 'Pre-release info to append to version')
+          ..addOption('build-no', abbr: 'n', help: 'Build number to appen to version')
+          ..addFlag('clean', abbr: 'c', negatable: true, defaultsTo: true, help: 'Removes pre-release and build info')
+          ..addFlag('major', abbr: 'm', negatable: false)
+          ..addFlag('minor', abbr: 'i', negatable: false)
+          ..addFlag('patch', abbr: 'p', negatable: false) //
         ;
   }
+
+  static final _vPrefix = RegExp('^[vV]');
 }
 
 class TimeoutError extends Error {
