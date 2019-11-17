@@ -1,1 +1,28 @@
 name: Setup SDK
+
+on: []
+env:
+  DART_SDK: ''
+  PUB_CACHE: ''
+
+jobs:
+  download-sdk:
+    name: Download SDK
+    runs-on: ${{ matrix.os }}
+    env:
+      SDK_DOWNLOAD_URL_BASE: 'https://storage.googleapis.com/dart-archive/channels/stable/release/2.6.1/sdk'
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]        
+    steps:
+      - id: download        
+        if: startsWith(matrix.os, 'windows')
+        run: |-
+          cd $HOME          
+          Invoke-WebRequest -Uri ${{ SDK_DOWNLOAD_URL_BASE }}/dartsdk-windows-x64-release.zip -OutFile dartsdk.zip
+          Expand-Archive -Path .\dartsdk-windows-x64-release.zip -DestinationPath .\dart-sdk
+          Remove-Item -Path .\dartsdk-windows-x64-release.zip -Confirm
+          $Env:DART_SDK = "$HOME\dart-sdk"          
+          $Env:PUB_CACHE += "$Env:APPDATA\Pub\Cache"
+          $Env:Path += ";$DART_SDK"
+                  
